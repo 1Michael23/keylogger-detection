@@ -1,6 +1,6 @@
 # Hardware Keylogger Detection
  
-## WIP, unfinished as of 26/03/2022
+## WIP, unfinished as of 05/04/22
 
 **Warning:** Certain Types of Hardware keyloggers can not be detected by this program, Passive Hardware Keyloggers are impossible to detect with software alone, as all they do is monitor the electrical signals between the keyboard and computer. Advanced Hardware keyloggers that copy usb identifiers (Such as the Hak5 key croc) Can not be currently detected with this program, although there are methods to detect these such as monitoring response times of usb commands. **This is planned but not currently implemented**.
 **Note:** I do not own a hardware keylogger, this program is based on research papers and not real world research, (yet).
