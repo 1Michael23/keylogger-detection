@@ -126,6 +126,8 @@ fn main() {
 
 }
 
+//function to generate report upon device descrepancy
+
 fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Vec<Keyboard>){
 
     let header_string = format!("Header Data: Total: {}, Time Created: {}, Unique_ID: {}, Version: {}\n", header_data.total, header_data.creation, header_data.unique_id, header_data.version);
@@ -168,12 +170,13 @@ fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Ve
 
 }
 
+//function to generate report upon program error
+
 fn report_error(error_code: String){
     println!("{}",error_code);
 }
 
-
-//function retirns a vector of all HID devices' Vendor ID'svalue
+//function retirns a vector of the vendor ids of all current hid devices
 
 fn hid_devices() -> Vec<u16>{
     let mut hid_vendor_ids: Vec<u16> = Vec::new();
@@ -188,6 +191,8 @@ fn hid_devices() -> Vec<u16>{
 
     return hid_vendor_ids;
 }
+
+//tales a vendor id and returns full information on the device
 
 fn hid_data(vendor_id: &u16) -> Keyboard {
 
@@ -210,6 +215,8 @@ fn hid_data(vendor_id: &u16) -> Keyboard {
     };
     return keyboard;
 }
+
+//gets currently attatched HID devices and writes them to a json file called {PATH}
 
 fn write_hid() {
 
@@ -248,6 +255,8 @@ fn write_hid() {
 
 }
 
+//loads the saved json file and returns a vector of keyboard structs and a header struct
+
 fn load_hid() -> (Vec<Keyboard>, Header) {
 
     let file = File::open(PATH).expect("Coulnt open file to verify data");
@@ -279,7 +288,9 @@ fn load_hid() -> (Vec<Keyboard>, Header) {
 
 }
 
+//This is a placeholder function for now, designed to be adapted to work with whatever unique ID works best for you
+
 fn get_unique_id() -> String{
-    //This is a placeholder function for now, designed to be adapted to work with whatever unique ID works best for you
+    
     return get_mac_address().expect("failed to get mac address").unwrap().to_string();
 }
