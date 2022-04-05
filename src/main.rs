@@ -4,6 +4,10 @@ use chrono::prelude::*;
 use mac_address::{self, get_mac_address};
 use std::process::exit;
 
+#[macro_use]
+extern crate json;
+
+
 #[derive(Serialize, Deserialize)]
 struct Header{
     total: usize,
@@ -25,6 +29,14 @@ struct Keyboard{
     port_number: u8
 }
 
+#[derive(Serialize, Deserialize)]
+struct Request{
+    username: String,
+    avatar_url: String,
+    embeds: String,
+}
+
+
 struct Tests{
     bus_number_passed: bool,
     address_passed: bool,
@@ -37,8 +49,12 @@ struct Tests{
 }
 
 
-const REPORT_ON_PASS: bool = true;
+const REPORT_ON_PASS: bool = false;
 const REPORT_ON_PORT_CHANGE: bool = false;
+const REPORT_ON_ADDRESS_CHANGE: bool = false;
+
+const WEBHOOK_URL: &str = "WEBHOOK URL GOES HERE";
+const AVATAR_URL: &str = "AVATAR URL GOES HERE";
 
 const PATH: &str = "./code.json";
 fn main() {
@@ -74,6 +90,8 @@ fn main() {
             let current_keyboard: Keyboard = current_devices[count].clone();
             let saved_keyboard: Keyboard = saved_devices[count].clone();
 
+            device_passed.push(true);
+
             let mut test: Tests = Tests { bus_number_passed: true, address_passed: true, vendor_id_passed: true, product_id_passed: true, class_code_passed: true, protocol_code_passed: true, speed_passed: true, port_number_passed: true };
 
             if current_keyboard.bus_number != saved_keyboard.bus_number {
@@ -82,7 +100,9 @@ fn main() {
             }
             if current_keyboard.address != saved_keyboard.address {
                 test.address_passed = false;
-                device_passed[count] = false;
+                if REPORT_ON_ADDRESS_CHANGE == true{
+                    device_passed[count] = false;
+                }
             }
             if current_keyboard.vendor_id != saved_keyboard.vendor_id {
                 test.vendor_id_passed = false;
@@ -126,6 +146,28 @@ fn main() {
 
 }
 
+fn send_report(input_string: String){
+
+    let json_request = object! {
+        username: "Keylogger-Detection",
+        avatar_url: AVATAR_URL,
+        contents: "beans",
+        embeds: [
+            {
+                title: "Keyboard Discrepancy Detected",
+                description: input_string.as_str(),
+                color: 16711680,
+            }
+        ]
+    };
+
+    let json = json_request.dump();
+    let url = WEBHOOK_URL;
+
+    ureq::post(url).set("Content-Type", "application/json").send(json.as_bytes()).expect("Failed to post to webhook");
+
+}
+
 //function to generate report upon device descrepancy
 
 fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Vec<Keyboard>){
@@ -140,40 +182,42 @@ fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Ve
 
         let current_device = &current_devices[i];
 
-        current_device_strings.push(format!("({}), Bus_number: {}, Address: {}, Vendor_ID: {}, Product_ID: {}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number{}\n",current_device.count, current_device.bus_number, current_device.address, current_device.vendor_id, current_device.product_id,current_device.class_code, current_device.protocol_code, current_device.speed, current_device.port_number))
+        current_device_strings.push(format!("**({})**, Bus_number: {:03}, Address: {:03}, Device_ID: {:04x}:{:04x}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number: {}\n",current_device.count, current_device.bus_number, current_device.address, current_device.vendor_id, current_device.product_id,current_device.class_code, current_device.protocol_code, current_device.speed, current_device.port_number))
     }
     for i in 0..saved_devices.len() {
 
         let saved_device = &saved_devices[i];
 
-        saved_device_strings.push(format!("({}), Bus_number: {}, Address: {}, Vendor_ID: {}, Product_ID: {}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number{}\n",saved_device.count, saved_device.bus_number, saved_device.address, saved_device.vendor_id, saved_device.product_id,saved_device.class_code, saved_device.protocol_code, saved_device.speed, saved_device.port_number))
+        saved_device_strings.push(format!("**({})**, Bus_number: {:03}, Address: {:03}, Device_ID: {:04x}:{:04x}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number: {}\n",saved_device.count, saved_device.bus_number, saved_device.address, saved_device.vendor_id, saved_device.product_id,saved_device.class_code, saved_device.protocol_code, saved_device.speed, saved_device.port_number))
     }
 
     let mut total_string: String = String::new();
 
     total_string.push_str(&header_string);
 
-    total_string.push_str("\nCurrent Devices:");
+    total_string.push_str("\n__**Current Devices:**__\n");
 
-
-    for i in 0..current_device_strings.len(){
-        total_string.push_str(&current_device_strings[i]);
+    if current_device_strings.len() == 0{
+        total_string.push_str("No Devices Found...")
+    }else{
+        for i in 0..current_device_strings.len(){
+            total_string.push_str(&current_device_strings[i]);
+        }
     }
-
-    total_string.push_str("\nDevices loaded from file:");
+    total_string.push_str("\n__**Devices loaded from file:**__\n");
 
     for i in 0..saved_device_strings.len(){
-        total_string.push_str(&current_device_strings[i]);
+        total_string.push_str(&saved_device_strings[i]);
     }
 
-    print!("{}",total_string);
+    send_report(total_string);
 
 }
 
 //function to generate report upon program error
 
 fn report_error(error_code: String){
-    println!("{}",error_code);
+    send_report(error_code);
 }
 
 //function retirns a vector of the vendor ids of all current hid devices
@@ -232,7 +276,7 @@ fn write_hid() {
     let header = Header { total, creation, unique_id, version };
     let json_header: String = serde_json::to_string(&header).unwrap();
 
-
+    
 
     let mut file = File::create(PATH).expect("Failed to open json file");
 
@@ -268,13 +312,15 @@ fn load_hid() -> (Vec<Keyboard>, Header) {
         lines.push(line.expect("Failed to push to vector."));
     }
 
+
     let mut saved_devices: Vec<Keyboard> = Vec::new();
 
     let header_data: Header = serde_json::from_str(&lines[0]).unwrap();
 
 
     if header_data.total != 0{
-        for line in lines{
+        for i in 1..lines.len(){
+            let line = &lines[i];
             let keyboard_data: Keyboard = serde_json::from_str(&line).expect("Failed to decode keyboard data");
             saved_devices.push(keyboard_data);
         }
