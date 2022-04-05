@@ -8,7 +8,7 @@ This program logs and saves the key attributes of HID (human interface devices) 
 This is not a bulletproof solution by any means, but its a hell of a lot better than checking the usb ports of a large deployment of computers.
 
 ### Webhook Example
-![The Default discord webhook setup](/repository/webhook-demo.png?raw=true "Discord webhook example")
+![The Default discord webhook setup](https://github.com/1Michael23/keylogger-detection/blob/master/webhook-demo.png?raw=true "Discord webhook example")
  
 ## Todo
  
