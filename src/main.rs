@@ -185,13 +185,11 @@ fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Ve
     let mut current_device_strings: Vec<String> = Vec::new();
     let mut saved_device_strings: Vec<String> = Vec::new();
 
-    for i in 0..current_devices.len() {
-        let current_device = &current_devices[i];
+    for current_device in current_devices {
 
         current_device_strings.push(format!("**({})**, Bus_number: {:03}, Address: {:03}, Device_ID: {:04x}:{:04x}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number: {}\n",current_device.count, current_device.bus_number, current_device.address, current_device.vendor_id, current_device.product_id,current_device.class_code, current_device.protocol_code, current_device.speed, current_device.port_number))
     }
-    for i in 0..saved_devices.len() {
-        let saved_device = &saved_devices[i];
+    for saved_device in saved_devices {
 
         saved_device_strings.push(format!("**({})**, Bus_number: {:03}, Address: {:03}, Device_ID: {:04x}:{:04x}, Class_code: {}, Protocol_code: {}, Speed: {}, Port_number: {}\n",saved_device.count, saved_device.bus_number, saved_device.address, saved_device.vendor_id, saved_device.product_id,saved_device.class_code, saved_device.protocol_code, saved_device.speed, saved_device.port_number))
     }
@@ -205,14 +203,14 @@ fn report(header_data: Header, current_devices: Vec<Keyboard>, saved_devices: Ve
     if current_device_strings.is_empty() {
         total_string.push_str("No Devices Found...")
     } else {
-        for i in 0..current_device_strings.len() {
-            total_string.push_str(&current_device_strings[i]);
+        for line in current_device_strings {
+            total_string.push_str(&line);
         }
     }
     total_string.push_str("\n__**Devices loaded from file:**__\n");
 
-    for i in 0..saved_device_strings.len() {
-        total_string.push_str(&saved_device_strings[i]);
+    for line in saved_device_strings {
+        total_string.push_str(&line);
     }
 
     send_report(total_string);
@@ -331,11 +329,11 @@ fn load_hid() -> (Vec<Keyboard>, Header) {
     let header_data: Header = serde_json::from_str(&lines[0]).unwrap();
 
     if header_data.total != 0 {
-        for i in 1..lines.len() {
-            let line = &lines[i];
+        for line in lines.iter().skip(0) {
             let keyboard_data: Keyboard =
                 serde_json::from_str(line).expect("Failed to decode keyboard data");
             saved_devices.push(keyboard_data);
+            
         }
     } else {
         report_error("No Devices found in file.".to_string());
